@@ -982,4 +982,94 @@ h1 {
   transform: scale(1.1);
 }
 
+/* ── Live Sidebar — Solo Ranking y Posición ─────────────────────────────── */
+.live-user-rank-box {
+  margin: 18px 0 16px;
+  background: rgba(141, 216, 246, 0.18);
+  border: 1px solid rgba(141, 216, 246, 0.35);
+  border-radius: 12px;
+  padding: 16px 14px;
+  text-align: center;
+}
+
+.live-my-position-val {
+  font-size: 3.6rem;
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+  font-weight: 800;
+  color: #0e2d3a;
+}
+
+.live-my-position-label {
+  margin-top: 6px;
+  color: rgba(14, 45, 58, 0.75);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.ranking-panel-live {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  margin-top: 10px;
+}
+
+/* ── Resultado Final — Solo Posición ────────────────────────────────────── */
+.result-card-position-only {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) 260px;
+  gap: 28px;
+  align-items: center;
+}
+
+.result-side-position-only {
+  display: flex;
+  flex-direction: column;
+}
+
+.position-highlight-box {
+  background: linear-gradient(135deg, rgba(141, 216, 246, 0.22), rgba(90, 181, 160, 0.15)) !important;
+  border: 2px solid rgba(141, 216, 246, 0.4) !important;
+  border-radius: 16px !important;
+  padding: 28px 20px !important;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.position-highlight-box .mini-score-value {
+  font-size: 5rem;
+  line-height: 0.85;
+  letter-spacing: -0.08em;
+  font-weight: 800;
+  color: #0e2d3a;
+}
+
+.position-highlight-box .mini-score-label {
+  margin-top: 12px;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(14, 45, 58, 0.8);
+}
+
+/* ── Selector de tema en landing ────────────────────────────────────────── */
+.theme-selector-wrap {
+  margin: 20px 0 28px;
+}
+
+.theme-selector-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(23, 23, 23, 0.65);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+
 
