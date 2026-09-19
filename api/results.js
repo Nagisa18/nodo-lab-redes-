@@ -1,10 +1,78 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const dataFile = path.join(__dirname, '..', 'results.json');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY;
 
+function sortAndRank(list) {
+  return [...list]
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0) || (a.wrong ?? 0) - (b.wrong ?? 0) || (a.userName || '').localeCompare(b.userName || ''))
+    .map((entry, index) => ({ ...entry, position: index + 1 }));
+}
+
+function readResultsLocal() {
+  try {
+    const raw = fs.readFileSync(dataFile, 'utf8');
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeResultsLocal(results) {
+  try {
+    fs.writeFileSync(dataFile, JSON.stringify(results, null, 2));
+  } catch (err) {
+    console.error('Error escribiendo results.json local:', err);
+  }
+}
+
+async function getAllResults() {
+  if (supabaseUrl && supabaseKey) {
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const { data, error } = await supabase.from('results').select('*');
+    if (error) throw error;
+    return data || [];
+  }
+
+  return readResultsLocal();
+}
+
+async function saveResult(resultItem) {
+  if (supabaseUrl && supabaseKey) {
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const { error } = await supabase.from('results').insert([resultItem]);
+    if (error) throw error;
+    return;
+  }
+
+  const current = readResultsLocal();
+  writeResultsLocal([...current, resultItem]);
+}
+
+async function deleteResultById(id) {
+  if (supabaseUrl && supabaseKey) {
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    if (id === 'all') {
+      await supabase.from('results').delete().neq('id', '');
+    } else {
+      await supabase.from('results').delete().eq('id', id);
+    }
+    return;
+  }
+
+  const current = readResultsLocal();
+  const filtered = id === 'all' ? [] : current.filter((item) => item.id !== id);
+  writeResultsLocal(filtered);
+}
+
 export default async function handler(req, res) {
-  // Encabezados CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -13,34 +81,13 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  if (!supabaseUrl || !supabaseKey) {
-    return res.status(500).json({
-      error: 'Variables SUPABASE_URL o SUPABASE_ANON_KEY no configuradas en el servidor.'
-    });
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
-  // ─── GET: Obtener ranking ───────────────────────────────────────────────
-  if (req.method === 'GET') {
-    try {
-      const { data, error } = await supabase.from('results').select('*');
-      if (error) {
-        return res.status(500).json({ error: error.message });
-      }
-      const ranked = (data || [])
-        .sort((a, b) => b.score - a.score || a.wrong - b.wrong || (a.userName || '').localeCompare(b.userName || ''))
-        .map((entry, index) => ({ ...entry, position: index + 1 }));
-
-      return res.status(200).json(ranked);
-    } catch (err) {
-      return res.status(500).json({ error: 'Error al consultar Supabase' });
+  try {
+    if (req.method === 'GET') {
+      const all = await getAllResults();
+      return res.status(200).json(sortAndRank(all));
     }
-  }
 
-  // ─── POST: Guardar resultado ────────────────────────────────────────────
-  if (req.method === 'POST') {
-    try {
+    if (req.method === 'POST') {
       const payload = req.body;
       if (!payload || !payload.userName || typeof payload.score !== 'number') {
         return res.status(400).json({ error: 'Datos inválidos' });
@@ -54,54 +101,28 @@ export default async function handler(req, res) {
         correct: Number(payload.correct) || 0,
         wrong: Number(payload.wrong) || 0,
         score: Number(payload.score) || 0,
-        createdAt: payload.createdAt || new Date().toISOString()
+        createdAt: payload.createdAt || new Date().toISOString(),
       };
 
-      const { error: insertError } = await supabase.from('results').insert([resultItem]);
-      if (insertError) {
-        console.error('Insert error:', insertError);
-        return res.status(500).json({ error: insertError.message });
-      }
-
-      const { data, error: fetchError } = await supabase.from('results').select('*');
-      if (fetchError) {
-        return res.status(500).json({ error: fetchError.message });
-      }
-
-      const ranked = (data || [])
-        .sort((a, b) => b.score - a.score || a.wrong - b.wrong || (a.userName || '').localeCompare(b.userName || ''))
-        .map((entry, index) => ({ ...entry, position: index + 1 }));
-
-      return res.status(201).json(ranked);
-    } catch (err) {
-      return res.status(500).json({ error: 'Error al guardar en Supabase' });
+      await saveResult(resultItem);
+      const all = await getAllResults();
+      return res.status(201).json(sortAndRank(all));
     }
-  }
 
-  // ─── DELETE: Eliminar registro(s) ───────────────────────────────────────
-  if (req.method === 'DELETE') {
-    try {
-      const { id } = req.query;
+    if (req.method === 'DELETE') {
+      const { id } = req.query || {};
       if (!id) {
         return res.status(400).json({ error: 'ID requerido' });
       }
 
-      if (id === 'all') {
-        await supabase.from('results').delete().neq('id', '');
-      } else {
-        await supabase.from('results').delete().eq('id', id);
-      }
-
-      const { data } = await supabase.from('results').select('*');
-      const ranked = (data || [])
-        .sort((a, b) => b.score - a.score || a.wrong - b.wrong || (a.userName || '').localeCompare(b.userName || ''))
-        .map((entry, index) => ({ ...entry, position: index + 1 }));
-
-      return res.status(200).json(ranked);
-    } catch (err) {
-      return res.status(500).json({ error: 'Error al eliminar en Supabase' });
+      await deleteResultById(id);
+      const all = await getAllResults();
+      return res.status(200).json(sortAndRank(all));
     }
-  }
 
-  return res.status(405).json({ error: 'Método no permitido' });
+    return res.status(405).json({ error: 'Método no permitido' });
+  } catch (err) {
+    console.error('API error:', err);
+    return res.status(500).json({ error: err?.message || 'Error interno del servidor' });
+  }
 }

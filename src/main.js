@@ -209,9 +209,13 @@ const questions = {
 // ─── App root ───────────────────────────────────────────────────────────────
 const app = document.querySelector('#app');
 
+function syncRoleFromHash() {
+  state.role = window.location.hash === ADMIN_SECRET_HASH ? 'admin' : 'user';
+}
+
 // ─── Estado global ─────────────────────────────────────────────────────────
 const state = {
-  role: window.location.hash === ADMIN_SECRET_HASH ? 'admin' : 'user',
+  role: 'user',
   step: 'landing',
   userName: '',
   selectedTheme: themes[0].id,
@@ -220,6 +224,8 @@ const state = {
   answers: [],
   results: [],
 };
+
+syncRoleFromHash();
 
 // Función para barajar preguntas
 function shuffleArray(array) {
@@ -411,6 +417,7 @@ function exportToExcel() {
 
 // ─── Render principal ────────────────────────────────────────────────────────
 function render() {
+  syncRoleFromHash();
   stopRankingPolling();
   stopAdminPolling();
 
@@ -888,6 +895,11 @@ function bindEvents() {
     });
   }
 }
+
+window.addEventListener('hashchange', () => {
+  syncRoleFromHash();
+  render();
+});
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 hydrateResults();
