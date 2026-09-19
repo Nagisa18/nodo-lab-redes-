@@ -1,14 +1,9 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const dataFile = path.join(__dirname, '..', 'results.json');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY;
+
+globalThis.__NODO_LAB_RESULTS__ = globalThis.__NODO_LAB_RESULTS__ || [];
 
 function sortAndRank(list) {
   return [...list]
@@ -17,20 +12,11 @@ function sortAndRank(list) {
 }
 
 function readResultsLocal() {
-  try {
-    const raw = fs.readFileSync(dataFile, 'utf8');
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  return Array.isArray(globalThis.__NODO_LAB_RESULTS__) ? globalThis.__NODO_LAB_RESULTS__ : [];
 }
 
 function writeResultsLocal(results) {
-  try {
-    fs.writeFileSync(dataFile, JSON.stringify(results, null, 2));
-  } catch (err) {
-    console.error('Error escribiendo results.json local:', err);
-  }
+  globalThis.__NODO_LAB_RESULTS__ = Array.isArray(results) ? results : [];
 }
 
 async function getAllResults() {
