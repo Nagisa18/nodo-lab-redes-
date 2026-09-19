@@ -79,11 +79,35 @@ async function saveResult(resultItem) {
   }
 }
 
+// Eliminar resultado(s)
+async function deleteResult(id) {
+  if (supabase) {
+    if (id === 'all') {
+      const { error } = await supabase
+        .from('results')
+        .delete()
+        .neq('id', '');
+      if (error) console.error('Error borrando todo en Supabase:', error);
+    } else {
+      const { error } = await supabase
+        .from('results')
+        .delete()
+        .eq('id', id);
+      if (error) console.error('Error borrando en Supabase:', error);
+    }
+  }
+
+  const local = readResultsLocal();
+  const filtered = id === 'all' ? [] : local.filter((r) => r.id !== id);
+  writeResultsLocal(filtered);
+}
+
 function sortAndRank(list) {
   return [...list]
     .sort((a, b) => b.score - a.score || a.wrong - b.wrong || (a.userName || '').localeCompare(b.userName || ''))
     .map((entry, index) => ({ ...entry, position: index + 1 }));
 }
+
 
 app.get('/api/results', async (_req, res) => {
   try {
@@ -122,6 +146,22 @@ app.post('/api/results', async (req, res) => {
     res.status(500).json({ error: 'Error al registrar resultado' });
   }
 });
+
+app.delete('/api/results', async (req, res) => {
+  const { id } = req.query;
+  if (!id) {
+    return res.status(400).json({ error: 'ID requerido' });
+  }
+  try {
+    await deleteResult(id);
+    const all = await getAllResults();
+    const ranked = sortAndRank(all);
+    res.json(ranked);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al eliminar resultado' });
+  }
+});
+
 
 app.get('/{*splat}', (_req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));

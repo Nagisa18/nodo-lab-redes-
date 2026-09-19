@@ -513,6 +513,7 @@ function buildAdminTable(ranking) {
           <th>Buenas</th>
           <th>Malas</th>
           <th>Puntaje</th>
+          <th class="action-th">Acción</th>
         </tr>
       </thead>
       <tbody>
@@ -528,11 +529,16 @@ function buildAdminTable(ranking) {
                       <td class="cell-good">${e.correct}</td>
                       <td class="cell-bad">${e.wrong}</td>
                       <td><span class="score-badge">${e.score}%</span></td>
+                      <td>
+                        <button type="button" class="admin-row-delete" data-id="${e.id}" title="Eliminar registro">
+                          🗑️
+                        </button>
+                      </td>
                     </tr>
                   `
                 )
                 .join('')
-            : `<tr><td colspan="6" class="empty-state">Aún no hay resultados registrados.</td></tr>`
+            : `<tr><td colspan="7" class="empty-state">Aún no hay resultados registrados.</td></tr>`
         }
       </tbody>
     </table>
@@ -583,6 +589,9 @@ function renderAdminView() {
             <button type="button" class="admin-download-btn" id="download-excel-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               DESCARGAR EXCEL
+            </button>
+            <button type="button" class="admin-clear-btn" id="clear-all-btn" title="Eliminar todos los resultados de prueba">
+              LIMPIAR REGISTROS
             </button>
           </div>
         </div>
@@ -675,7 +684,46 @@ function bindEvents() {
   if (dlBtn) {
     dlBtn.addEventListener('click', exportToExcel);
   }
+
+  // Botón eliminar fila individual
+  document.querySelectorAll('.admin-row-delete').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if (!id) return;
+      if (window.confirm('¿Deseas eliminar este registro de prueba?')) {
+        try {
+          const res = await fetch(`/api/results?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+          if (res.ok) {
+            state.results = await res.json();
+            render();
+          }
+        } catch (err) {
+          console.error('Error eliminando:', err);
+        }
+      }
+    });
+  });
+
+  // Botón limpiar todos los registros
+  const clearAllBtn = document.getElementById('clear-all-btn');
+  if (clearAllBtn) {
+    clearAllBtn.addEventListener('click', async () => {
+      if (window.confirm('¿Estás segura de eliminar TODOS los registros de prueba? Esta acción vaciará la tabla para empezar la clase limpia.')) {
+        try {
+          const res = await fetch('/api/results?id=all', { method: 'DELETE' });
+          if (res.ok) {
+            state.results = await res.json();
+            render();
+          }
+        } catch (err) {
+          console.error('Error limpiando todo:', err);
+        }
+      }
+    });
+  }
 }
+
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 hydrateResults();

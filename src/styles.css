@@ -934,3 +934,52 @@ h1 {
   animation: pulse-live 2s ease-in-out infinite;
 }
 
+/* ── Admin — botón limpiar registros ────────────────────────────────────── */
+.admin-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(192, 83, 59, 0.4);
+  border-radius: 10px;
+  padding: 0.7rem 1.1rem;
+  background: rgba(192, 83, 59, 0.08);
+  color: #c0533b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.admin-clear-btn:hover {
+  background: rgba(192, 83, 59, 0.18);
+  border-color: #c0533b;
+}
+
+/* ── Admin — botón borrar fila individual ───────────────────────────────── */
+.action-th {
+  text-align: center !important;
+  width: 70px;
+}
+
+.admin-row-delete {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px 8px;
+  transition: all 0.15s ease;
+  display: block;
+  margin: 0 auto;
+}
+
+.admin-row-delete:hover {
+  background: rgba(192, 83, 59, 0.15);
+  border-color: rgba(192, 83, 59, 0.3);
+  transform: scale(1.1);
+}
+
+
