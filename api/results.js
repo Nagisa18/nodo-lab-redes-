@@ -3,59 +3,46 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY;
 
-globalThis.__NODO_LAB_RESULTS__ = globalThis.__NODO_LAB_RESULTS__ || [];
-
 function sortAndRank(list) {
   return [...list]
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0) || (a.wrong ?? 0) - (b.wrong ?? 0) || (a.userName || '').localeCompare(b.userName || ''))
     .map((entry, index) => ({ ...entry, position: index + 1 }));
 }
 
-function readResultsLocal() {
-  return Array.isArray(globalThis.__NODO_LAB_RESULTS__) ? globalThis.__NODO_LAB_RESULTS__ : [];
-}
-
-function writeResultsLocal(results) {
-  globalThis.__NODO_LAB_RESULTS__ = Array.isArray(results) ? results : [];
-}
-
 async function getAllResults() {
-  if (supabaseUrl && supabaseKey) {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const { data, error } = await supabase.from('results').select('*');
-    if (error) throw error;
-    return data || [];
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Faltan SUPABASE_URL o SUPABASE_ANON_KEY en Vercel');
   }
 
-  return readResultsLocal();
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  const { data, error } = await supabase.from('results').select('*');
+  if (error) throw error;
+  return data || [];
 }
 
 async function saveResult(resultItem) {
-  if (supabaseUrl && supabaseKey) {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const { error } = await supabase.from('results').insert([resultItem]);
-    if (error) throw error;
-    return;
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Faltan SUPABASE_URL o SUPABASE_ANON_KEY en Vercel');
   }
 
-  const current = readResultsLocal();
-  writeResultsLocal([...current, resultItem]);
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  const { error } = await supabase.from('results').insert([resultItem]);
+  if (error) throw error;
 }
 
 async function deleteResultById(id) {
-  if (supabaseUrl && supabaseKey) {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    if (id === 'all') {
-      await supabase.from('results').delete().neq('id', '');
-    } else {
-      await supabase.from('results').delete().eq('id', id);
-    }
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Faltan SUPABASE_URL o SUPABASE_ANON_KEY en Vercel');
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  if (id === 'all') {
+    await supabase.from('results').delete().neq('id', '');
     return;
   }
 
-  const current = readResultsLocal();
-  const filtered = id === 'all' ? [] : current.filter((item) => item.id !== id);
-  writeResultsLocal(filtered);
+  await supabase.from('results').delete().eq('id', id);
 }
 
 export default async function handler(req, res) {
